@@ -6,14 +6,12 @@
         "red": "N/A"
     },
     "today": {
-        "green": "N/A",
-        "amber": "N/A",
-        "red": "N/A"
-    },
-    "tomorrow": {
         "green": null,
         "amber": null,
         "red": null
     },
-    "last_updated": "2026-08-06 09:31:42"
+    "tomorrow": {
+        "error": "Unable to extract data. Website text is incomplete or does not contain relevant information."
+    },
+    "last_updated": "2026-08-06 12:59:59"
 }
