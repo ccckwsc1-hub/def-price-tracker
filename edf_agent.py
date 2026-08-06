@@ -50,12 +50,17 @@ def extract_prices_with_groq(raw_text):
     print("Asking Groq to extract tomorrow's rates...")
     client = Groq(api_key=GROQ_API_KEY)
     
-    prompt = f"""
-    You are a data extraction assistant. I am giving you text scraped from the EDF FreePhase electricity webpage.
-    Find the pence per kWh (p) rates for the Green, Amber, and Red periods.
+    # 印出部分網頁文字到 GitHub Log 讓我們先看看抓到了什麼
+    print(f"Raw text sample: {raw_text[:500]}")
     
-    You MUST output ONLY a valid JSON object. Do not include markdown formatting like ```json. 
-    The JSON must use this exact structure:
+    prompt = f"""
+    You are a professional web data extractor. 
+    Look at the following text scraped from the EDF FreePhase electricity tariff webpage.
+    Your task is to find the pence per kWh (p) rates for the Green, Amber, and Red time periods.
+    Look for numbers associated with 'p/kWh' or pence rates.
+    
+    You MUST output ONLY a valid JSON object. Do not include any markdown formatting like ```json. 
+    The JSON must use this exact structure, with the prices represented as strings (e.g., "15.5" or "12.3p"):
     {{
         "green": "...",
         "amber": "...",
@@ -63,18 +68,17 @@ def extract_prices_with_groq(raw_text):
     }}
     
     Website Text:
-    {raw_text[:4000]}
+    {raw_text[:6000]}
     """
     
-    # Generate structured JSON using Groq's extremely fast Llama 3.1 model
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"}
     )
     
-    # Convert Groq's text response into a standard Python dictionary
     return json.loads(response.choices[0].message.content)
+
 
 def main():
     # 1. Load the historical data
