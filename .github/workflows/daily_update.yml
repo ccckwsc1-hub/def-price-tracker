@@ -24,7 +24,7 @@ jobs:
 
       - name: Run AI Agent script
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python edf_agent.py
 
       - name: Commit and push updated JSON
