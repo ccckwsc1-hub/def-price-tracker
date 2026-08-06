@@ -1,17 +1,19 @@
 {
     "postcode": "MK10 9WH",
     "yesterday": {
-        "error": "Unable to find pricing information"
+        "green": "12.4p",
+        "amber": "24.5p",
+        "red": "42.1p"
     },
     "today": {
-        "green": "None",
-        "amber": "None",
-        "red": "None"
+        "green": "13.1p",
+        "amber": "26.0p",
+        "red": "45.2p"
     },
     "tomorrow": {
-        "green": "None",
-        "amber": "None",
-        "red": "None"
+        "green": "11.5p",
+        "amber": "23.0p",
+        "red": "39.8p"
     },
-    "last_updated": "2026-08-06 13:21:31"
+    "last_updated": "2026-08-06 13:25:57"
 }
