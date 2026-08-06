@@ -1,15 +1,17 @@
 {
     "postcode": "MK10 9WH",
     "yesterday": {
-        "error": "Unable to extract data. Website text is incomplete or does not contain relevant information."
-    },
-    "today": {
         "error": "Unable to find pricing information"
     },
-    "tomorrow": {
+    "today": {
         "error": {
             "message": "Tariff Information Labels text not found. Please try a different URL."
         }
     },
-    "last_updated": "2026-08-06 13:07:37"
+    "tomorrow": {
+        "green": "",
+        "amber": "",
+        "red": ""
+    },
+    "last_updated": "2026-08-06 13:12:04"
 }
