@@ -11,9 +11,9 @@
         "red": "N/A"
     },
     "tomorrow": {
-        "green": "N/A",
-        "amber": "N/A",
-        "red": "N/A"
+        "green": null,
+        "amber": null,
+        "red": null
     },
-    "last_updated": "2026-08-06 07:31:17"
+    "last_updated": "2026-08-06 09:31:42"
 }
