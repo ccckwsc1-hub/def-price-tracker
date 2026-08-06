@@ -33,17 +33,27 @@ def load_data():
         }
 
 def fetch_edf_website_text(postcode):
-    """Scrape the EDF page and extract just the readable text."""
+    """Scrape the EDF page with browser-like headers to avoid being blocked."""
     url = f"https://www.edfenergy.com/tariff-information-labels/freePhase?postcode={postcode.replace(' ', '%20')}"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    
+    # 偽裝成真正的 Chrome 瀏覽器，避免被網站阻擋
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+    }
     
     print(f"Fetching data from EDF for {postcode}...")
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     
-    # Use BeautifulSoup to strip out all the HTML code and keep only the text
     soup = BeautifulSoup(response.text, 'html.parser')
-    return soup.get_text(separator=' ', strip=True)
+    text = soup.get_text(separator=' ', strip=True)
+    
+    # 印出抓到的文字長度，讓我們知道是不是空的
+    print(f"Scraped text length: {len(text)} characters")
+    return text
+
 
 def extract_prices_with_groq(raw_text):
     """Use Groq (Llama 3.1) to find the exact prices from the messy website text."""
