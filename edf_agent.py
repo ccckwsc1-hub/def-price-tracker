@@ -1,9 +1,7 @@
 import json
 import os
 import requests
-from bs4 import BeautifulSoup
 from datetime import datetime
-from pydantic import BaseModel
 from groq import Groq
 
 # ==========================================
@@ -11,19 +9,13 @@ from groq import Groq
 # ==========================================
 FILE_NAME = "prices.json"
 POSTCODE = "MK10 9WH"
-# 從 GitHub Actions 的環境變數中讀取 Groq 金鑰
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY") 
 
-# ==========================================
-# FUNCTIONS
-# ==========================================
 def load_data():
-    """Load existing 3-day data, or create a blank structure if it doesn't exist."""
     if os.path.exists(FILE_NAME):
         with open(FILE_NAME, 'r', encoding='utf-8') as f:
             return json.load(f)
     else:
-        # Initial blank state including the postcode
         return {
             "postcode": POSTCODE,
             "yesterday": {"green": "N/A", "amber": "N/A", "red": "N/A"},
@@ -32,53 +24,42 @@ def load_data():
             "last_updated": ""
         }
 
-def fetch_edf_website_text(postcode):
-    """Scrape the EDF page with browser-like headers to avoid being blocked."""
-    url = f"https://www.edfenergy.com/tariff-information-labels/freePhase?postcode={postcode.replace(' ', '%20')}"
+def fetch_edf_data(postcode):
+    """直接呼叫 EDF 取得價格資料的 API"""
+    formatted_postcode = postcode.replace(" ", "").upper()
+    # 這是 EDF 官網前端實際在背景讀取數據的 API 端點
+    url = f"https://www.edfenergy.com/api/tariff/free-phase?postcode={formatted_postcode}"
     
-    # 偽裝成真正的 Chrome 瀏覽器，避免被網站阻擋
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "application/json"
     }
     
-    print(f"Fetching data from EDF for {postcode}...")
+    print(f"Fetching from EDF API for {postcode}...")
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     
-    soup = BeautifulSoup(response.text, 'html.parser')
-    text = soup.get_text(separator=' ', strip=True)
-    
-    # 印出抓到的文字長度，讓我們知道是不是空的
-    print(f"Scraped text length: {len(text)} characters")
-    return text
+    # 直接回傳解析後的 JSON 數據
+    return response.json()
 
-
-def extract_prices_with_groq(raw_text):
-    """Use Groq (Llama 3.1) to find the exact prices from the messy website text."""
-    print("Asking Groq to extract tomorrow's rates...")
+def parse_prices_with_groq(api_data):
+    """讓 Groq 從 API 回傳的複雜 JSON 結構中精準挑出今日與明日的綠/黃/紅價格"""
+    print("Asking Groq to structure the prices...")
     client = Groq(api_key=GROQ_API_KEY)
     
-    # 印出部分網頁文字到 GitHub Log 讓我們先看看抓到了什麼
-    print(f"Raw text sample: {raw_text[:500]}")
-    
     prompt = f"""
-    You are a professional web data extractor. 
-    Look at the following text scraped from the EDF FreePhase electricity tariff webpage.
-    Your task is to find the pence per kWh (p) rates for the Green, Amber, and Red time periods.
-    Look for numbers associated with 'p/kWh' or pence rates.
+    You are a precise data extraction assistant. I will give you raw JSON data from the EDF API.
+    Your task is to extract the pence per kWh rates for TODAY and TOMORROW for three periods: Green, Amber, and Red.
     
-    You MUST output ONLY a valid JSON object. Do not include any markdown formatting like ```json. 
-    The JSON must use this exact structure, with the prices represented as strings (e.g., "15.5" or "12.3p"):
+    You MUST output ONLY a valid JSON object. Do not include markdown like ```json.
+    The format must be strictly like this:
     {{
-        "green": "...",
-        "amber": "...",
-        "red": "..."
+        "today": {{"green": "...", "amber": "...", "red": "..."}},
+        "tomorrow": {{"green": "...", "amber": "...", "red": "..."}}
     }}
     
-    Website Text:
-    {raw_text[:6000]}
+    Raw API Data:
+    {json.dumps(api_data)[:8000]}
     """
     
     response = client.chat.completions.create(
@@ -89,25 +70,21 @@ def extract_prices_with_groq(raw_text):
     
     return json.loads(response.choices[0].message.content)
 
-
 def main():
-    # 1. Load the historical data
     data = load_data()
     
-    # 2. Shift the days (Today becomes Yesterday, Tomorrow becomes Today)
-    data["yesterday"] = data["today"]
-    data["today"] = data["tomorrow"]
-    
     try:
-        # 3. Get the new data for tomorrow
-        website_text = fetch_edf_website_text(POSTCODE)
-        tomorrow_prices = extract_prices_with_groq(website_text)
+        api_response = fetch_edf_data(POSTCODE)
+        extracted = parse_prices_with_groq(api_response)
         
-        # 4. Save the new prices into the "tomorrow" slot
-        data["tomorrow"] = tomorrow_prices
+        # 直接更新今日與明日的資料
+        if "today" in extracted:
+            data["today"] = extracted["today"]
+        if "tomorrow" in extracted:
+            data["tomorrow"] = extracted["tomorrow"]
+            
         data["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # 5. Save everything back to the prices.json file
         with open(FILE_NAME, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
             
@@ -117,8 +94,5 @@ def main():
     except Exception as e:
         print(f"An error occurred: {e}")
 
-# ==========================================
-# RUN SCRIPT
-# ==========================================
 if __name__ == "__main__":
     main()
