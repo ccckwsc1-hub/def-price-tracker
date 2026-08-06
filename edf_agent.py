@@ -3,27 +3,16 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-from google import genai
-from google.genai import types
 from pydantic import BaseModel
+from groq import Groq
 
 # ==========================================
 # CONFIGURATION
 # ==========================================
 FILE_NAME = "prices.json"
 POSTCODE = "MK10 9WH"
-# Paste your key from https://aistudio.google.com/ here
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") 
-
-# ==========================================
-# DATA STRUCTURE (PYDANTIC)
-# ==========================================
-# This acts as an iron-clad blueprint. It forces Gemini to 
-# return exactly these three fields and absolutely nothing else.
-class PriceData(BaseModel):
-    green: str
-    amber: str
-    red: str
+# 從 GitHub Actions 的環境變數中讀取 Groq 金鑰
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY") 
 
 # ==========================================
 # FUNCTIONS
@@ -56,31 +45,36 @@ def fetch_edf_website_text(postcode):
     soup = BeautifulSoup(response.text, 'html.parser')
     return soup.get_text(separator=' ', strip=True)
 
-def extract_prices_with_gemini(raw_text):
-    """Use Gemini to find the exact prices from the messy website text."""
-    print("Asking Gemini to extract tomorrow's rates...")
-    client = genai.Client(api_key=GEMINI_API_KEY)
+def extract_prices_with_groq(raw_text):
+    """Use Groq (Llama 3.1) to find the exact prices from the messy website text."""
+    print("Asking Groq to extract tomorrow's rates...")
+    client = Groq(api_key=GROQ_API_KEY)
     
     prompt = f"""
     You are a data extraction assistant. I am giving you text scraped from the EDF FreePhase electricity webpage.
     Find the pence per kWh (p) rates for the Green, Amber, and Red periods.
     
+    You MUST output ONLY a valid JSON object. Do not include markdown formatting like ```json. 
+    The JSON must use this exact structure:
+    {{
+        "green": "...",
+        "amber": "...",
+        "red": "..."
+    }}
+    
     Website Text:
     {raw_text[:4000]}
     """
     
-    # Generate structured JSON using Gemini Flash (fast and cheap)
-    response = client.models.generate_content(
-        model='gemini-3.5-flash', 
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=PriceData,
-        )
+    # Generate structured JSON using Groq's extremely fast Llama 3.1 model
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"}
     )
     
-    # Convert Gemini's text response into a standard Python dictionary
-    return json.loads(response.text)
+    # Convert Groq's text response into a standard Python dictionary
+    return json.loads(response.choices[0].message.content)
 
 def main():
     # 1. Load the historical data
@@ -93,7 +87,7 @@ def main():
     try:
         # 3. Get the new data for tomorrow
         website_text = fetch_edf_website_text(POSTCODE)
-        tomorrow_prices = extract_prices_with_gemini(website_text)
+        tomorrow_prices = extract_prices_with_groq(website_text)
         
         # 4. Save the new prices into the "tomorrow" slot
         data["tomorrow"] = tomorrow_prices
