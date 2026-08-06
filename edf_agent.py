@@ -13,7 +13,7 @@ from pydantic import BaseModel
 FILE_NAME = "prices.json"
 POSTCODE = "MK10 9WH"
 # Paste your key from https://aistudio.google.com/ here
-GEMINI_API_KEY = os.environ.get("AQ.Ab8RN6IHnHPH1vn8-P2h8YuWcxCi-ViteHCwcCBXLm_C1XKvLw") 
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") 
 
 # ==========================================
 # DATA STRUCTURE (PYDANTIC)
