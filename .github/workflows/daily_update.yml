@@ -3,7 +3,7 @@ name: Daily EDF Price Fetcher
 on:
   schedule:
     # 英國時間 (BST) 的 16:15 等於 UTC 時間的 15:15
-    - cron: '15 15 * * *' 
+    - cron: '30 13 * * *' 
   workflow_dispatch: # 允許你隨時手動點擊按鈕執行
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests beautifulsoup4 google-genai pydantic
+          pip install requests beautifulsoup4 groq pydantic
 
       - name: Run AI Agent script
         env:
