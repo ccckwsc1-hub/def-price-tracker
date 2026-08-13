@@ -6,14 +6,14 @@
         "red": "42.1p"
     },
     "today": {
-        "green": 12,
-        "amber": 28,
-        "red": 42
+        "green": 12.5,
+        "amber": 24.19,
+        "red": 40.3
     },
     "tomorrow": {
-        "green": 14,
-        "amber": 32,
-        "red": 48
+        "green": 11.8,
+        "amber": 26.5,
+        "red": 42.9
     },
-    "last_updated": "2026-08-12 16:37:15"
+    "last_updated": "2026-08-13 16:34:32"
 }
